@@ -1,4 +1,5 @@
 import {WebContentsView, session, shell} from 'electron'
+import path from 'path'
 import eventManager from './eventManager.js'
 import tbsDbManager from './store/tbsDbManager.js'
 import { getViewEnv, applyNetwork } from "./disguise/fingerprint.js";
@@ -97,8 +98,14 @@ class ViewManager {
         const partitionName = 'persist:' + name;
         const mySession = session.fromPartition(partitionName);
 
+        // 浏览器环境：独立会话/指纹/扩展的全新浏览器，起始页为本地 newtab
+        const siteRow = tbsDbManager.getSite(name);
+        const isBrowser = !!(siteRow && siteRow.type === 'browser');
+        const preloadjs = isBrowser
+            ? path.join(CONS.APP.PATH, '/resource/preload/web.js')
+            : Utility.selectAppropriatePreload(url);
+
         const isHttpAddr = url.toLowerCase().startsWith("http");
-        const preloadjs = Utility.selectAppropriatePreload(url);
 
         const unique = Date.now();
         const args = {source, name, unique, fingerprint: {navigator: env.identity.navigator, deep: env.deep}};
@@ -115,10 +122,10 @@ class ViewManager {
             }
         })
 
-        if(isHttpAddr){
+        if(isHttpAddr || isBrowser){
             Utility.alterRequestHeader(view, env.headers)
             Utility.alterResponseHeader(view)
-            await Utility.loadExtensions(view)
+            await Utility.loadExtensions(view, name)
         }
 
         view.webContents.setZoomLevel(0)
@@ -137,6 +144,12 @@ class ViewManager {
         }
 
         view.webContents.setWindowOpenHandler((details) => {
+            if(isBrowser){
+                // 浏览器环境：新窗口统一在当前环境内打开（等同普通浏览器行为）
+                view.webContents.send('open:window', details.url)
+                return { action: 'deny' };
+            }
+
             if(Utility.isMainDomainEqual(details.url, url)){
                 view.webContents.send('open:window', details.url)
                 return { action: 'deny' };

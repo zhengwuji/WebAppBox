@@ -36,9 +36,9 @@ class Utility {
         }
     }
 
-    static async loadExtensions(view) {
+    static async loadExtensions(view, name) {
         const sess = view.webContents.session;
-        return pluginManager.loadEnabledExtensions(sess)
+        return pluginManager.loadForSite(sess, name)
     }
 
     static selectAppropriatePreload(url){

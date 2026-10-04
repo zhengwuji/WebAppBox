@@ -27,6 +27,13 @@ const addNew = () => {
   show.value = true;
 };
 
+const addNewBrowser = async () => {
+  const startUrl = await window.myApi.getBrowserStartUrl();
+  const n = list.value.filter(item => item.isBrowser).length + 1;
+  ele.value = {tag: `浏览器环境 ${n}`, url: startUrl, name: '', proxy: '', type: 'browser', extensions: [], isOpen: true, isNew: true, img: ''};
+  show.value = true;
+};
+
 const handleEdit = (element) => {
   if(!Object.hasOwn(element, 'proxy')){
     element.proxy = "";
@@ -51,6 +58,10 @@ const handleClone = async (element) => {
       url: element.url,
       img: element.img,
     isOpen:true
+  }
+  if (element.isBrowser) {
+    newElement.type = 'browser';
+    newElement.extensions = element.extensions;
   }
   window.myApi.addMenu(newElement)
   await initData()
@@ -133,11 +144,21 @@ const handleDragChange = async () => {
     <n-alert :show-icon="false">
       1.点击“新增站点”，可自行添加站点，也可修改或者删除站点；<br>
       2.相同网站的站点多次添加，即可实现多开效果；<br>
-      3.拖动站点卡片任意空白区域或拖拽手柄调整排序，结果实时同步到侧边导航栏。
+      3.点击“新增浏览器”创建独立浏览器环境：独立会话、独立指纹、独立代理、可挂载扩展，等同全新浏览器，反复添加即可多开；<br>
+      4.拖动站点卡片任意空白区域或拖拽手柄调整排序，结果实时同步到侧边导航栏。
     </n-alert>
 
     <div class="box">
       <div class="box-title">
+          <n-button type="info" @click="addNewBrowser">
+          <template #icon>
+            <n-icon color="#fff">
+              <iconAddNew />
+            </n-icon>
+          </template>
+          新增浏览器
+        </n-button>
+
           <n-button type="primary" @click="addNew">
           <template #icon>
             <n-icon color="#fff">

@@ -69,6 +69,7 @@ contextBridge.exposeInMainWorld('myApi', {
     updateSiteFingerprint: (payload) => ipcRenderer.invoke('update:site:fingerprint', payload),
     randomizeSiteFingerprint: (name) => ipcRenderer.invoke('randomize:site:fingerprint', name),
     getFingerprintOptions: () => ipcRenderer.invoke('fingerprint:options'),
+    getBrowserStartUrl: () => ipcRenderer.invoke('get:browser:starturl'),
 
     // 代理
     testProxy: (config) => ipcRenderer.invoke('proxy:test', config),

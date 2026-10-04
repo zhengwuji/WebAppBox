@@ -37,7 +37,9 @@ const SCHEMA_SQL = `
     "order" INTEGER NOT NULL DEFAULT 0,
     jsCode  TEXT NOT NULL DEFAULT '',
     proxy   TEXT NOT NULL DEFAULT '',
-    fingerprint TEXT NOT NULL DEFAULT ''
+    fingerprint TEXT NOT NULL DEFAULT '',
+    type    TEXT NOT NULL DEFAULT 'site',
+    extensions TEXT NOT NULL DEFAULT ''
   );
   CREATE TABLE IF NOT EXISTS shortcuts (
     name     TEXT PRIMARY KEY,
@@ -216,6 +218,12 @@ class TbsDbManager {
     if (!colNames.includes('fingerprint')) {
       db.run("ALTER TABLE sites ADD COLUMN fingerprint TEXT NOT NULL DEFAULT ''")
     }
+    if (!colNames.includes('type')) {
+      db.run("ALTER TABLE sites ADD COLUMN type TEXT NOT NULL DEFAULT 'site'")
+    }
+    if (!colNames.includes('extensions')) {
+      db.run("ALTER TABLE sites ADD COLUMN extensions TEXT NOT NULL DEFAULT ''")
+    }
   }
 
   // ---------- plugin ----------
@@ -295,16 +303,27 @@ class TbsDbManager {
     persistSync()
   }
 
+  getSiteExtensions(name) {
+    const row = queryOne(getDb(), 'SELECT extensions FROM sites WHERE name = ?', [name])
+    if (!row || !row.extensions) return null
+    try {
+      const parsed = JSON.parse(row.extensions)
+      return Array.isArray(parsed) ? parsed : null
+    } catch { return null }
+  }
+
   addSite(site) {
     const db = getDb()
     const cnt = queryOne(db, 'SELECT COUNT(*) AS c FROM sites')
     const order = (cnt?.c || 0) + 1
     const name = md5Hash(site.name + String(Date.now()))
     exec(db,
-      `INSERT INTO sites (name, tag, url, img, isOpen, "order", jsCode, proxy)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO sites (name, tag, url, img, isOpen, "order", jsCode, proxy, type, extensions)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [name, site.tag || '', site.url || '', site.img || '',
-       site.isOpen ? 1 : 0, order, site.jsCode || '', site.proxy || '']
+       site.isOpen ? 1 : 0, order, site.jsCode || '', site.proxy || '',
+       site.type || 'site',
+       Array.isArray(site.extensions) ? JSON.stringify(site.extensions) : (site.extensions || '')]
     )
     persistSync()
     return { ...site, name, order }
@@ -316,11 +335,14 @@ class TbsDbManager {
     if (!existing) return
     const merged = { ...existing, ...site }
     exec(db,
-      `UPDATE sites SET tag = ?, url = ?, img = ?, isOpen = ?, "order" = ?, jsCode = ?, proxy = ?
+      `UPDATE sites SET tag = ?, url = ?, img = ?, isOpen = ?, "order" = ?, jsCode = ?, proxy = ?, type = ?, extensions = ?
        WHERE name = ?`,
       [merged.tag || '', merged.url || '', merged.img || '',
        merged.isOpen ? 1 : 0, merged.order || 0,
-       merged.jsCode || '', merged.proxy || '', site.name]
+       merged.jsCode || '', merged.proxy || '',
+       merged.type || 'site',
+       Array.isArray(merged.extensions) ? JSON.stringify(merged.extensions) : (merged.extensions || ''),
+       site.name]
     )
     persistSync()
   }
@@ -359,7 +381,7 @@ class TbsDbManager {
     const db = getDb()
     let sites = queryAll(db, 'SELECT * FROM sites ORDER BY "order" ASC')
     if (sites.length === 0) sites = CONS.SITES
-    sites = sites.map(s => ({ ...s, isOpen: !!s.isOpen }))
+    sites = sites.map(s => ({ ...s, isOpen: !!s.isOpen, isBrowser: s.type === 'browser' }))
     return {
       openMenus: processImg(sites.filter(s => s.isOpen)),
       closeMenus: processImg(sites.filter(s => !s.isOpen)),
@@ -712,10 +734,12 @@ class TbsDbManager {
       const sitesData = newData.collections.sites?.data || []
       for (const s of sitesData) {
         db.run(
-          `INSERT OR IGNORE INTO sites (name, tag, url, img, isOpen, "order", jsCode, proxy)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT OR IGNORE INTO sites (name, tag, url, img, isOpen, "order", jsCode, proxy, type, extensions)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [s.name || '', s.tag || '', s.url || '', s.img || '',
-           s.isOpen ? 1 : 0, s.order || 0, s.jsCode || '', s.proxy || '']
+           s.isOpen ? 1 : 0, s.order || 0, s.jsCode || '', s.proxy || '',
+           s.type || 'site',
+           Array.isArray(s.extensions) ? JSON.stringify(s.extensions) : (s.extensions || '')]
         )
       }
 

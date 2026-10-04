@@ -370,6 +370,8 @@ class WindowManager{
 
         ipcMain.handle('fingerprint:options', async () => getOptions())
 
+        ipcMain.handle('get:browser:starturl', async () => CONS.APP.BROWSER_START_URL)
+
         ipcMain.handle('proxy:test', async (event, config) => testProxy(config))
 
         ipcMain.handle('proxy:global:get', async () => storeManager.getSetting('globalProxy') || { type: 'none' })

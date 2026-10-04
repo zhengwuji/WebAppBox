@@ -47,6 +47,30 @@ class PluginManager {
   }
 
   /**
+   * 每环境扩展：浏览器环境按自身清单加载（可挂载全局未启用的扩展），
+   * 普通站点未单独配置时跟随全局启用列表。
+   */
+  getSiteExtensionPaths(name) {
+    const ids = tbsDbManager.getSiteExtensions(name)
+    if (!Array.isArray(ids)) return this.getEnabledPluginPaths()
+    return ids
+      .map(id => tbsDbManager.getPlugin(id))
+      .filter(p => p && p.ext_path && fs.existsSync(p.ext_path))
+      .map(p => p.ext_path)
+  }
+
+  async loadForSite(session, name) {
+    for (const extPath of this.getSiteExtensionPaths(name)) {
+      try {
+        await session.extensions.loadExtension(extPath)
+      } catch (err) {
+        console.error(`[pluginManager] Failed to load extension ${extPath}:`, err)
+      }
+    }
+    return true
+  }
+
+  /**
    * 切换插件的启用/禁用状态
    */
   togglePlugin(id, enabled) {

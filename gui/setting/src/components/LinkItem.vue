@@ -92,7 +92,8 @@ const stopAnimation = ()=>{
     <div class="open-site"><n-avatar @click="handleClickOpenSite" round width="40" :src="icon"/></div>
     <div class="link">
       <div> {{ element.tag }}</div>
-      <div class="link-url"> {{ element.url }}</div>
+      <div class="link-url" v-if="element.isBrowser">🧭 浏览器环境（独立会话/指纹/扩展）</div>
+      <div class="link-url" v-else> {{ element.url }}</div>
     </div>
 
     <div class="getIcon">
