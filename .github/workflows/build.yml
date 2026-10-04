@@ -1,0 +1,51 @@
+name: Build Exe
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'README.md'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Configure git to use HTTPS (fix SSH clone failure for @electron/node-gyp)
+        run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Main & Settings UI
+        run: |
+          pnpm exec electron-vite build
+          cd gui/setting
+          npx vite build
+
+      - name: Build Windows Exe
+        run: pnpm run build --win --x64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WebAppBox-windows-x64
+          path: dist/*.exe
+          overwrite: true
+          if-no-files-found: error

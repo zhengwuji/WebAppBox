@@ -1,0 +1,111 @@
+:root {
+  --vt-c-white: #ffffff;
+  --vt-c-white-soft: #f1f5f9;
+  --vt-c-white-mute: #e2e8f0;
+
+  --vt-c-black: #0f172a;
+  --vt-c-black-soft: #1e293b;
+  --vt-c-black-mute: #334155;
+
+  --vt-c-indigo: #1e293b;
+  --vt-new-border: #e2e8f0;
+
+
+  --vt-c-divider-light-1: rgba(100, 116, 139, 0.25);
+  --vt-c-divider-light-2: rgba(100, 116, 139, 0.08);
+  --vt-c-divider-dark-1: rgba(148, 163, 184, 0.5);
+  --vt-c-divider-dark-2: rgba(148, 163, 184, 0.2);
+
+  --vt-c-text-light-1: #0f172a;
+  --vt-c-text-light-2: #475569;
+  --vt-c-text-dark-1: #f8fafc;
+  --vt-c-text-dark-2: #94a3b8;
+}
+
+/* semantic color variables for this project */
+:root {
+  --color-background: var(--vt-c-white);
+  --color-background-soft: var(--vt-c-white-soft);
+  --color-background-mute: var(--vt-c-white-mute);
+
+  --new-color-border: var(--vt-new-border);
+  --color-border: var(--vt-c-divider-light-2);
+  --color-border-hover: var(--vt-c-divider-light-1);
+
+  --color-heading: var(--vt-c-text-light-1);
+  --color-text: var(--vt-c-text-light-1);
+
+  --section-gap: 160px;
+}
+
+/* Design Tokens (shadcn 冷色调) */
+:root {
+  /* Brand colors */
+  --color-primary: #3b82f6;
+  --color-accent-cyan: #06b6d4;
+
+  /* Text hierarchy */
+  --color-text-secondary: #475569;
+  --color-text-tertiary: #94a3b8;
+
+  /* Semantic colors */
+  --color-semantic-success: #10b981;
+  --color-semantic-warning: #f59e0b;
+  --color-semantic-error: #ef4444;
+
+  /* Spacing tokens (4px grid) */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+
+  /* Radius tokens */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 12px;
+  --radius-full: 50%;
+
+  /* Shadow tokens (shadcn style) */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: var(--vt-c-black);
+    --color-background-soft: var(--vt-c-black-soft);
+    --color-background-mute: var(--vt-c-black-mute);
+
+    --new-color-border: #334155;
+    --color-border: #334155;
+    --color-border-hover: #475569;
+
+    --color-heading: var(--vt-c-text-dark-1);
+    --color-text: var(--vt-c-text-dark-1);
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  font-weight: normal;
+}
+
+body {
+  min-height: 100vh;
+  color: var(--color-text);
+  background: var(--color-background);
+  transition:
+    color 0.5s,
+    background-color 0.5s;
+  line-height: 1.6;
+  font-family: -apple-system, BlinkMacSystemFont, PingFang SC, Microsoft YaHei, Noto Sans SC, Inter, Segoe UI, Roboto, Ubuntu, Helvetica Neue, Arial, sans-serif;
+  font-size: 16px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

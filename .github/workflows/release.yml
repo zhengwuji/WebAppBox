@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Configure git to use HTTPS (fix SSH clone failure for @electron/node-gyp)
+        run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Main & Settings UI
+        run: |
+          pnpm exec electron-vite build
+          cd gui/setting
+          npx vite build
+
+      - name: Build Windows Exe
+        run: pnpm run build --win --x64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Release Notes (from README 更新日志)
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          awk -v pat="### v$TAG" 'index($0, pat)==1 {f=1; next} f && /^#{2,3} / {exit} f {print}' README.md > notes.md
+          if [ ! -s notes.md ]; then
+            echo "WebAppBox ${GITHUB_REF_NAME} 更新发布。" > notes.md
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: WebAppBox ${{ github.ref_name }}
+          body_path: notes.md
+          files: dist/*.exe
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

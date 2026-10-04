@@ -1,0 +1,120 @@
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ===== Design Tokens ===== */
+:root {
+    --sidebar-bg: #f1f5f9;
+    --sidebar-bg-dark: #0f172a;
+    --content-bg: #f8fafc;
+    --logo-bg: #e2e8f0;
+    --logo-bg-dark: #334155;
+    --logo-hover-bg: #cbd5e1;
+    --logo-hover-bg-dark: #475569;
+    --highlight-bg: white;
+    --highlight-bg-dark: #1e293b;
+    --accent-cyan: #06b6d4;
+    --sidebar-shadow: 1px 0 3px rgba(0, 0, 0, 0.08);
+}
+
+body{
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, PingFang SC, Microsoft YaHei, Noto Sans SC, Inter, Segoe UI, Roboto, Ubuntu, Helvetica Neue, Arial, sans-serif;
+}
+#content{
+    display: flex;
+    flex-direction: row;
+}
+
+#left{
+    width: 50px;
+    height: 100vh;
+    background: var(--sidebar-bg);
+    box-shadow: var(--sidebar-shadow);
+}
+
+#nav-wrapper{
+    display: flex;
+    flex-direction: column;
+    justify-content:space-between;
+    height: 100vh;
+}
+
+#nav-box{
+    height: calc(100vh - 50px);
+    overflow: hidden;
+}
+
+#right{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: calc(100% - 50px);
+    height: 100vh;
+    background: var(--content-bg);
+}
+
+.logo{
+    width:50px;
+    padding: 10px 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    filter: grayscale(100%);
+    user-select: none;
+    outline: none;
+}
+
+.logo>span{
+    display: inline-flex;
+    width: 30px;
+    height: 30px;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    background: var(--logo-bg);
+    overflow: hidden;
+}
+
+.logo img{
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.logo:hover{
+    background: var(--logo-hover-bg);
+    filter: grayscale(0%);
+}
+
+.highlighted .logo{
+    border-left: 3px solid var(--accent-cyan);
+    background: var(--highlight-bg);
+    filter: grayscale(0%);
+}
+
+#set-box{
+    margin-top: auto;
+    height: 50px;
+}
+
+@media (prefers-color-scheme: dark) {
+    #left{
+        background: var(--sidebar-bg-dark);
+    }
+
+    .logo:hover{
+        background: var(--logo-hover-bg-dark);
+    }
+
+    .highlighted .logo{
+        border-left: 3px solid var(--accent-cyan);
+        background: var(--highlight-bg-dark);
+    }
+}

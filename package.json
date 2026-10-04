@@ -1,0 +1,92 @@
+{
+  "name": "webappbox",
+  "version": "1.0.0",
+  "main": "out/main.js",
+  "type": "module",
+  "scripts": {
+    "start:debug": "electron --enable-logging --log-file=electron.log --trace-warnings .",
+    "start": "electron-vite build && electron .",
+    "pack": "electron-builder --dir",
+    "build": "electron-builder"
+  },
+  "author": {
+    "name": "zhengwuji"
+  },
+  "license": "ISC",
+  "description": "多开网页盒子 WebAppBox",
+  "devDependencies": {
+    "electron": "37.10.3",
+    "electron-builder": "^26.0.12",
+    "electron-vite": "^3.1.0"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "sql.js": "^1.14.1"
+  },
+  "build": {
+    "appId": "com.webappbox.app",
+    "productName": "WebAppBox",
+    "npmRebuild": false,
+    "afterPack": "./scripts/afterPack.js",
+    "files": [
+      "**/*",
+      "!app/**/*",
+      "!.github/**/*",
+      "!.git/**/*",
+      "!.idea/**/*",
+      "!gui/setting/**/*",
+      "!dist/*",
+      "!README.md",
+      "!.node-version",
+      "!electron.vite.config.js",
+      "!pnpm-workspace.yaml",
+      "!node_modules/**/{.cache,.bin,test}"
+    ],
+    "extraResources": [
+      {
+        "from": "./resource/plugin",
+        "to": "plugin",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/sql.js/dist/sql-wasm.wasm"
+    ],
+    "compression": "maximum",
+    "removePackageScripts": true,
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": "dmg",
+      "icon": "resource/build/mac_icon.icns",
+      "identity": null,
+      "artifactName": "${productName}-Setup-${version}-mac-${arch}.${ext}"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "resource/build/win_icon.ico",
+      "artifactName": "${productName}-Setup-${version}-win-${arch}.${ext}"
+    },
+    "linux": {
+      "category": "utility",
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "build/linux_icon.png",
+      "artifactName": "${productName}-Setup-${version}-linux-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "installerIcon": "icon.ico",
+      "uninstallerIcon": "icon.ico",
+      "installerHeaderIcon": "icon.ico"
+    }
+  }
+}
