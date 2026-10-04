@@ -1,4 +1,4 @@
-import {WebContentsView, session, shell} from 'electron'
+import {WebContentsView, session, shell, app, Notification} from 'electron'
 import path from 'path'
 import eventManager from './eventManager.js'
 import tbsDbManager from './store/tbsDbManager.js'
@@ -46,6 +46,13 @@ class ViewManager {
                 view.object.webContents.close()
             }
         }
+        if (view.toolbar) {
+            this.parentView?.removeChildView(view.toolbar);
+            if (view.toolbar.webContents && !view.toolbar.webContents.isDestroyed()) {
+                view.toolbar.webContents.close()
+            }
+            view.toolbar = null;
+        }
         view.object = null;
     }
 
@@ -79,6 +86,12 @@ class ViewManager {
             if (this.views[i].name === name.toLowerCase()) {
                 this.views[i].time = timestamp;
                 this.views[i].object.setVisible(true)
+                if (this.views[i].toolbar) {
+                    this.views[i].toolbar.setVisible(true)
+                    if (this.parentView) {
+                        this.parentView.addChildView(this.views[i].toolbar)
+                    }
+                }
                 if (this.parentView) {
                     this.parentView.addChildView(this.views[i].object);
                 }
@@ -86,8 +99,10 @@ class ViewManager {
                 eventManager.emit('set:title', this.views[i].object.webContents.getTitle());
             }else{
                 this.views[i].object.setVisible(false)
+                if (this.views[i].toolbar) this.views[i].toolbar.setVisible(false)
                 if (this.parentView) {
                     this.parentView.removeChildView(this.views[i].object);
+                    if (this.views[i].toolbar) this.parentView.removeChildView(this.views[i].toolbar)
                 }
             }
         }
@@ -133,6 +148,21 @@ class ViewManager {
         this.injectJsCode(view, name);
         applyNetwork(mySession, name)
 
+        // 浏览器环境：下载自动保存到系统下载目录并弹系统通知
+        if (isBrowser && !mySession.__dlHooked) {
+            mySession.__dlHooked = true;
+            mySession.on('will-download', (event, item) => {
+                try {
+                    item.setSavePath(path.join(app.getPath('downloads'), item.getFilename()));
+                    item.once('done', (e, state) => {
+                        if (state === 'completed') {
+                            try { new Notification({ title: 'WebAppBox 下载完成', body: item.getFilename() }).show() } catch { }
+                        }
+                    });
+                } catch { }
+            });
+        }
+
         Utility.loadWithLoading(view, url).then(()=>{
             eventManager.emit('set:title', view.webContents.getTitle());
         }).catch((error) => {
@@ -174,10 +204,39 @@ class ViewManager {
             object: view
         }
 
+        // 浏览器环境附加工具栏视图（后退/前进/刷新/主页/地址栏/扩展）
+        if (isBrowser) {
+            const toolbarView = new WebContentsView({
+                webPreferences: {
+                    nodeIntegration: false,
+                    contextIsolation: true,
+                    preload: path.join(CONS.APP.PATH, '/resource/preload/browsertoolbar.js'),
+                    additionalArguments: [`--browserenv=${name}`]
+                }
+            })
+            toolbarView.webContents.loadFile('gui/browsertoolbar.html')
+            viewItem.toolbar = toolbarView
+            const pushState = () => {
+                try {
+                    toolbarView.webContents.send('browser:state', {
+                        url: view.webContents.getURL(),
+                        title: view.webContents.getTitle(),
+                        canBack: view.webContents.navigationHistory.canGoBack(),
+                        canFwd: view.webContents.navigationHistory.canGoForward()
+                    })
+                } catch { }
+            }
+            view.webContents.on('did-navigate', pushState)
+            view.webContents.on('did-navigate-in-page', pushState)
+            view.webContents.on('page-title-updated', pushState)
+        }
+
         this.views.forEach(view => {
             view.object.setVisible(false)
+            if (view.toolbar) view.toolbar.setVisible(false)
             if (this.parentView) {
                 this.parentView.removeChildView(view.object);
+                if (view.toolbar) this.parentView.removeChildView(view.toolbar)
             }
         })
         this.addView(viewItem)

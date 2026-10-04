@@ -1,4 +1,5 @@
-import {app, BaseWindow, View, ipcMain, clipboard, WebContentsView, nativeTheme, dialog, session} from 'electron'
+import {app, BaseWindow, View, ipcMain, clipboard, WebContentsView, nativeTheme, dialog, session, nativeImage} from 'electron'
+import path from 'path'
 import viewManager from './viewManager.js'
 import tbsDbManager from './store/tbsDbManager.js'
 import storeManager from './store/storeManager.js'
@@ -15,6 +16,7 @@ import pluginManager from "./pluginManager.js"
 import { summarize, getProfile, randomizeProfile, getOptions, applyGlobalProxy } from "./disguise/fingerprint.js"
 import { testProxy } from "./utility/proxyCore.js"
 import kernelManager from "./utility/kernelManager.js"
+import crxManager from "./utility/crxManager.js"
 
 
 class WindowManager{
@@ -170,8 +172,11 @@ class WindowManager{
 
         eventManager.on('layout:resize', (data) => {
             const layout = Layout.getLayout(this.window)
-            data.view.object.setBounds(layout.view)
+            this.applyViewBounds(data.view, layout.view)
             this.webView.addChildView(data.view.object)
+            if (data.view.toolbar) {
+                this.webView.addChildView(data.view.toolbar)
+            }
         })
 
         ipcMain.on('reset:title', (event, name) => {
@@ -372,6 +377,126 @@ class WindowManager{
 
         ipcMain.handle('get:browser:starturl', async () => CONS.APP.BROWSER_START_URL)
 
+        ipcMain.handle('get:browser:icon', async () => {
+            try {
+                const img = nativeImage.createFromPath(path.join(CONS.APP.PATH, 'resource/build/webappbox-icon.png'))
+                return { ret: 0, data: img.isEmpty() ? '' : img.toDataURL() }
+            } catch {
+                return { ret: 1 }
+            }
+        })
+
+        ipcMain.handle('browser:list-extensions', async (event, name) => {
+            const ids = tbsDbManager.getSiteExtensions(name) || []
+            return ids.map(id => {
+                const p = pluginManager.getPlugin(id)
+                if (!p) return { id, name: id, version: '', type: 'unknown', icon: '', permissions: '无特殊权限' }
+                let icon = ''
+                let permissions = '无特殊权限'
+                try {
+                    const mf = JSON.parse(fs.readFileSync(path.join(p.ext_path, 'manifest.json'), 'utf-8'))
+                    const icons = mf.icons || {}
+                    const sizes = Object.keys(icons).map(Number).sort((a, b) => b - a)
+                    if (sizes.length) {
+                        const iconImg = nativeImage.createFromPath(path.join(p.ext_path, icons[sizes[sizes.length - 1]]))
+                        if (!iconImg.isEmpty()) icon = iconImg.resize({ width: 32 }).toDataURL()
+                    }
+                    if ((mf.permissions && mf.permissions.length) || (mf.host_permissions && mf.host_permissions.length)) {
+                        permissions = '可以读取和更改网站上的信息'
+                    }
+                } catch { /* 图标/权限读取失败给默认值 */ }
+                return { id, name: p.name, version: p.version, type: p.type, icon, permissions: permissions }
+            })
+        })
+
+        ipcMain.handle('browser:toggle-bookmark', async (event, payload) => {
+            const { url, title } = payload || {}
+            if (!url) return { ok: false }
+            const list = storeManager.getSetting('browserBookmarks') || []
+            const idx = list.findIndex(b => b.url === url)
+            let bookmarked
+            if (idx === -1) {
+                list.unshift({ url, title: title || url, ts: Date.now() })
+                bookmarked = true
+            } else {
+                list.splice(idx, 1)
+                bookmarked = false
+            }
+            storeManager.set('browserBookmarks', list)
+            return { ok: true, bookmarked, list }
+        })
+
+        ipcMain.handle('browser:list-bookmarks', async () => storeManager.getSetting('browserBookmarks') || [])
+
+        ipcMain.handle('browser:manage', async () => {
+            const win = windowManager.getWindow()
+            if (win && !win.isVisible()) win.show()
+            this.menuView.webContents.send('auto:click', CONS.SETTING[0])
+            return { ret: 0 }
+        })
+
+        // ---------- 浏览器环境工具栏 ----------
+
+        ipcMain.handle('browser:nav', async (event, name, action, payload) => {
+            const item = viewManager.views.find(v => v.name === String(name || '').toLowerCase())
+            if (!item || !item.object) return { ret: 1 }
+            const wc = item.object.webContents
+            try {
+                if (action === 'back') {
+                    wc.navigationHistory.goBack()
+                } else if (action === 'forward') {
+                    wc.navigationHistory.goForward()
+                } else if (action === 'reload') {
+                    wc.reload()
+                } else if (action === 'home') {
+                    const site = tbsDbManager.getSite(item.name)
+                    await wc.loadURL((site && site.url) || CONS.APP.BROWSER_START_URL)
+                } else if (action === 'navigate') {
+                    const raw = String(payload || '').trim()
+                    if (!raw) return { ret: 1 }
+                    if (/^https?:\/\//i.test(raw) || /^file:/i.test(raw)) {
+                        await wc.loadURL(raw)
+                    } else if (/^[\w-]+(\.[\w-]+)+(:\d+)?(\/.*)?$/.test(raw)) {
+                        await wc.loadURL('https://' + raw)
+                    } else {
+                        await wc.loadURL('https://www.google.com/search?q=' + encodeURIComponent(raw))
+                    }
+                }
+                return { ret: 0 }
+            } catch (e) {
+                return { ret: 1, error: String(e) }
+            }
+        })
+
+        ipcMain.handle('browser:install-store', async (event, name, input) => {
+            try {
+                const r = await crxManager.install(name, input)
+                if (r.ok) {
+                    const item = viewManager.views.find(v => v.name === String(name || '').toLowerCase())
+                    const extPath = pluginManager.getPlugin(r.id)?.ext_path
+                    if (item && item.object && extPath) {
+                        try { await item.object.webContents.session.extensions.loadExtension(extPath) } catch { /* 已加载 */ }
+                    }
+                }
+                return r
+            } catch (e) {
+                return { ok: false, error: String(e.message || e) }
+            }
+        })
+
+        ipcMain.handle('browser:remove-extension', async (event, name, id) => {
+            try {
+                crxManager.remove(name, id)
+                const item = viewManager.views.find(v => v.name === String(name || '').toLowerCase())
+                if (item && item.object) {
+                    try { item.object.webContents.session.extensions.removeExtension(id) } catch { /* 未加载 */ }
+                }
+                return { ok: true }
+            } catch (e) {
+                return { ok: false, error: String(e.message || e) }
+            }
+        })
+
         ipcMain.handle('proxy:test', async (event, config) => testProxy(config))
 
         ipcMain.handle('proxy:global:get', async () => storeManager.getSetting('globalProxy') || { type: 'none' })
@@ -431,8 +556,19 @@ class WindowManager{
         this.webView.setBounds(layout.web);
 
         viewManager.views.forEach(view => {
-            view.object.setBounds(layout.view);
+            this.applyViewBounds(view, layout.view);
         });
+    }
+
+    // 浏览器环境：顶部工具栏 42px，页面占剩余区域
+    applyViewBounds(viewItem, bounds) {
+        if (viewItem.toolbar) {
+            const TH = 42;
+            viewItem.toolbar.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height: TH });
+            viewItem.object.setBounds({ x: bounds.x, y: bounds.y + TH, width: bounds.width, height: Math.max(0, bounds.height - TH) });
+        } else {
+            viewItem.object.setBounds(bounds);
+        }
     }
 
     setSystemTheme(){

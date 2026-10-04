@@ -70,6 +70,7 @@ contextBridge.exposeInMainWorld('myApi', {
     randomizeSiteFingerprint: (name) => ipcRenderer.invoke('randomize:site:fingerprint', name),
     getFingerprintOptions: () => ipcRenderer.invoke('fingerprint:options'),
     getBrowserStartUrl: () => ipcRenderer.invoke('get:browser:starturl'),
+    getBrowserIcon: () => ipcRenderer.invoke('get:browser:icon'),
 
     // 代理
     testProxy: (config) => ipcRenderer.invoke('proxy:test', config),

@@ -29,8 +29,9 @@ const addNew = () => {
 
 const addNewBrowser = async () => {
   const startUrl = await window.myApi.getBrowserStartUrl();
+  const iconRes = await window.myApi.getBrowserIcon();
   const n = list.value.filter(item => item.isBrowser).length + 1;
-  ele.value = {tag: `浏览器环境 ${n}`, url: startUrl, name: '', proxy: '', type: 'browser', extensions: [], isOpen: true, isNew: true, img: ''};
+  ele.value = {tag: `浏览器环境 ${n}`, url: startUrl, name: '', proxy: '', type: 'browser', extensions: [], isOpen: true, isNew: true, img: iconRes && iconRes.ret === 0 ? iconRes.data : ''};
   show.value = true;
 };
 

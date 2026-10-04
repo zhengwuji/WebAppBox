@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; user-select: none; }
+  body { margin:0; height:100vh; display:flex; align-items:center; gap:4px; padding:0 8px;
+         background:#202124; color:#e8eaed; font-family:"Segoe UI","Microsoft YaHei",sans-serif; overflow:hidden; }
+  button.tool { width:30px; height:30px; border:none; background:transparent; color:#e8eaed; border-radius:6px;
+                cursor:pointer; font-size:15px; line-height:30px; flex-shrink:0; padding:0; }
+  button.tool:hover:not(:disabled) { background:#3c4043; }
+  button.tool:disabled { opacity:.35; cursor:default; }
+  #addr { flex:1; height:30px; border:none; border-radius:15px; background:#3c4043; color:#e8eaed;
+          padding:0 14px; font-size:13px; outline:none; min-width:120px; user-select:text; }
+  #addr:focus { background:#303134; box-shadow:0 0 0 2px rgba(138,180,248,.35); }
+  #star.on { color:#fdd663; }
+  .panel { position:fixed; top:38px; right:6px; width:340px; max-height:76vh; overflow-y:auto;
+           background:#292a2d; border:1px solid #3c4043; border-radius:10px; padding:12px; display:none;
+           box-shadow:0 8px 24px rgba(0,0,0,.5); z-index:99; }
+  .panel.open { display:block; }
+  .ptitle { font-size:13px; font-weight:600; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; }
+  .ptitle .x { cursor:pointer; opacity:.7; font-size:14px; padding:0 4px; }
+  .ptitle .x:hover { opacity:1; }
+  .perm-hint { font-size:11px; color:#9aa0a6; margin-bottom:8px; line-height:1.4; }
+  .ext-item { display:flex; align-items:center; gap:10px; padding:7px 2px; border-bottom:1px solid #3c4043; }
+  .ext-item img { width:24px; height:24px; border-radius:5px; flex-shrink:0; }
+  .ext-item .letter { width:24px; height:24px; border-radius:5px; background:#3c4043; color:#8ab4f8; flex-shrink:0;
+                      display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; }
+  .ext-item .meta { flex:1; min-width:0; }
+  .ext-item .n { font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ext-item .p { font-size:10px; color:#9aa0a6; }
+  .ext-item .rm { border:none; background:transparent; color:#9aa0a6; cursor:pointer; font-size:15px; padding:2px 6px; border-radius:5px; }
+  .ext-item .rm:hover { background:#3c4043; color:#f28b82; }
+  .manage-row { text-align:center; padding:8px 0 2px; }
+  .manage-row a { color:#8ab4f8; font-size:12px; cursor:pointer; text-decoration:none; }
+  .bm-item { display:flex; align-items:center; gap:8px; padding:6px 2px; font-size:12px; cursor:pointer; border-radius:6px; }
+  .bm-item:hover { background:#3c4043; }
+  .bm-item .t { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .bm-item .rm { color:#9aa0a6; font-size:13px; padding:0 4px; border-radius:4px; }
+  .bm-item .rm:hover { color:#f28b82; }
+  .install-row { display:flex; gap:6px; margin-top:8px; }
+  .install-row input { flex:1; border:1px solid #3c4043; background:#202124; color:#e8eaed; border-radius:6px;
+                       padding:5px 8px; font-size:11px; outline:none; user-select:text; }
+  .install-row button { border:none; background:#8ab4f8; color:#202124; border-radius:6px; padding:5px 10px; cursor:pointer; font-size:11px; }
+  .status { font-size:11px; margin-top:6px; color:#9aa0a6; word-break:break-all; line-height:1.5; }
+  .status.ok { color:#81c995; } .status.err { color:#f28b82; }
+</style>
+</head>
+<body>
+  <button class="tool" id="back" title="后退">←</button>
+  <button class="tool" id="fwd" title="前进">→</button>
+  <button class="tool" id="reload" title="刷新">⟳</button>
+  <button class="tool" id="home" title="主页（起始页）">⌂</button>
+  <input id="addr" placeholder="输入网址或搜索词，回车打开" />
+  <button class="tool" id="star" title="收藏此页">☆</button>
+  <button class="tool" id="ext" title="扩展程序">🧩</button>
+
+  <div class="panel" id="panel">
+    <div class="ptitle">扩展程序 <span class="x" id="closePanel">✕</span></div>
+    <div class="perm-hint">这些扩展程序可以读取和更改它们所在网站上的信息</div>
+    <div id="extlist"></div>
+    <div class="manage-row"><a id="manageLink">管理扩展程序</a></div>
+
+    <div class="ptitle" style="margin-top:14px;">书签</div>
+    <div id="bmlist"></div>
+
+    <div class="ptitle" style="margin-top:14px;">从 Chrome 应用商店安装</div>
+    <div class="install-row">
+      <input id="storeInput" placeholder="粘贴商店详情页链接或扩展 ID" />
+      <button id="installBtn">安装</button>
+    </div>
+    <div class="status" id="status">用法：在本环境打开 chromewebstore.google.com 的扩展详情页，复制地址栏链接粘贴到这里安装，安装后扩展直接生效。</div>
+  </div>
+
+<script>
+  const bar = window.browserBar;
+  const $ = (id) => document.getElementById(id);
+  const state = { url: '', title: '', canBack: false, canFwd: false, bookmarks: [] };
+
+  const refreshStar = () => {
+    const on = state.bookmarks.some(b => b.url === state.url);
+    $('star').textContent = on ? '★' : '☆';
+    $('star').classList.toggle('on', on);
+  };
+  const refreshNav = () => {
+    $('back').disabled = !state.canBack;
+    $('fwd').disabled = !state.canFwd;
+  };
+
+  $('back').onclick = () => bar.nav('back');
+  $('fwd').onclick = () => bar.nav('forward');
+  $('reload').onclick = () => bar.nav('reload');
+  $('home').onclick = () => bar.nav('home');
+  $('addr').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { bar.nav('navigate', $('addr').value); $('addr').blur(); }
+  });
+  bar.onState((s) => {
+    if (s.url !== state.url) refreshStar();
+    state.url = s.url; state.title = s.title; state.canBack = s.canBack; state.canFwd = s.canFwd;
+    $('addr').value = s.url;
+    refreshNav(); refreshStar();
+  });
+
+  $('star').onclick = async () => {
+    if (!state.url || state.url.startsWith('file:')) return;
+    const r = await bar.toggleBookmark(state.url, state.title);
+    if (r.ok) { state.bookmarks = r.list; refreshStar(); renderBookmarks(); }
+  };
+
+  const renderBookmarks = (list) => {
+    const l = list || state.bookmarks;
+    $('bmlist').innerHTML = '';
+    if (!l.length) { $('bmlist').innerHTML = '<div class="status">暂无书签</div>'; return; }
+    l.forEach(bm => {
+      const row = document.createElement('div');
+      row.className = 'bm-item';
+      const t = document.createElement('span'); t.className = 't'; t.textContent = bm.title || bm.url;
+      t.onclick = () => { bar.nav('navigate', bm.url); $('panel').classList.remove('open'); };
+      const x = document.createElement('span'); x.className = 'rm'; x.textContent = '✕';
+      x.onclick = async (e) => { e.stopPropagation(); const r = await bar.toggleBookmark(bm.url, bm.title); state.bookmarks = r.list; renderBookmarks(); refreshStar(); };
+      row.appendChild(t); row.appendChild(x);
+      $('bmlist').appendChild(row);
+    });
+  };
+
+  const renderExts = (list) => {
+    $('extlist').innerHTML = '';
+    if (!list.length) { $('extlist').innerHTML = '<div class="status" style="padding:6px 0;">尚未挂载扩展</div>'; return; }
+    list.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'ext-item';
+      if (item.icon) {
+        const img = document.createElement('img'); img.src = item.icon; row.appendChild(img);
+      } else {
+        const letter = document.createElement('div'); letter.className = 'letter';
+        letter.textContent = (item.name || '?').charAt(0).toUpperCase(); row.appendChild(letter);
+      }
+      const meta = document.createElement('div'); meta.className = 'meta';
+      const n = document.createElement('div'); n.className = 'n'; n.textContent = item.name;
+      const p = document.createElement('div'); p.className = 'p';
+      p.textContent = item.permissions + (item.version ? ' · v' + item.version : '');
+      meta.appendChild(n); meta.appendChild(p);
+      const rm = document.createElement('button'); rm.className = 'rm'; rm.textContent = '🗑'; rm.title = '移除';
+      rm.onclick = async (e) => { e.stopPropagation(); await bar.removeExtension(item.id); listExt(); };
+      row.appendChild(meta); row.appendChild(rm);
+      $('extlist').appendChild(row);
+    });
+  };
+
+  const listExt = async () => {
+    try {
+      const list = await bar.listExtensions();
+      renderExts(list);
+    } catch (e) {
+      $('extlist').innerHTML = '<div class="status">加载失败</div>';
+    }
+  };
+  const listBm = async () => {
+    try { state.bookmarks = await bar.listBookmarks(); renderBookmarks(); refreshStar(); } catch { }
+  };
+
+  $('ext').onclick = async () => {
+    $('panel').classList.toggle('open');
+    if ($('panel').classList.contains('open')) { await listExt(); await listBm(); }
+  };
+  $('closePanel').onclick = () => $('panel').classList.remove('open');
+  $('manageLink').onclick = () => { bar.manageExtensions(); $('panel').classList.remove('open'); };
+
+  $('installBtn').onclick = async () => {
+    const input = $('storeInput').value.trim();
+    if (!input) return;
+    const st = $('status');
+    st.className = 'status'; st.textContent = '正在从 Chrome 商店下载并安装…';
+    $('installBtn').disabled = true;
+    try {
+      const r = await bar.installStore(input);
+      if (r.ok) {
+        st.className = 'status ok';
+        st.textContent = '✅ 已安装并生效：' + r.name + (r.version ? ' v' + r.version : '');
+        $('storeInput').value = '';
+        listExt();
+      } else {
+        st.className = 'status err';
+        st.textContent = '❌ ' + (r.error || '安装失败');
+      }
+    } catch (e) {
+      st.className = 'status err'; st.textContent = '❌ ' + e;
+    }
+    $('installBtn').disabled = false;
+  };
+
+  document.addEventListener('click', (e) => {
+    const panel = $('panel');
+    if (panel.classList.contains('open') && !panel.contains(e.target) && e.target !== $('ext') && !$('ext').contains(e.target)) {
+      panel.classList.remove('open');
+    }
+  });
+</script>
+</body>
+</html>
