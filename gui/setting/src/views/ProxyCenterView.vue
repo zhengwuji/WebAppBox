@@ -170,7 +170,7 @@ const testEditProxy = async () => {
   }
 };
 
-const toneColor = { default: '#858f9f', success: '#059669', info: '#6d28d9' };
+const toneColor = { default: '#86909c', success: '#00b42a', info: '#2f54eb' };
 const columns = [
   {
     title: '窗口', key: 'tag', width: 200, ellipsis: { tooltip: true },
@@ -226,7 +226,7 @@ const ghostBtn = {
   <div class="pc-page">
     <div class="pc-header">
       <div>
-        <h2 class="pc-title">代理中心</h2>
+        <h2 class="pc-title">代理IP</h2>
         <p class="pc-desc">全局网络出口与每个窗口的独立代理，支持 SOCKS5 / HTTP 与账密认证。</p>
       </div>
     </div>

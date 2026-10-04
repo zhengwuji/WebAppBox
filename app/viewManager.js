@@ -109,6 +109,10 @@ class ViewManager {
     }
 
     async createView(url, name, source) {
+        // 记录最近打开时间（浏览器窗口列表展示）
+        if (name && name !== CONS.APP.CLOSE_SITE_NAME) {
+            tbsDbManager.setLastOpenTime(name.toLowerCase());
+        }
         const env = getViewEnv(name);
         const partitionName = 'persist:' + name;
         const mySession = session.fromPartition(partitionName);

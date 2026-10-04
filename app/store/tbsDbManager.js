@@ -40,7 +40,8 @@ const SCHEMA_SQL = `
     fingerprint TEXT NOT NULL DEFAULT '',
     type    TEXT NOT NULL DEFAULT 'site',
     extensions TEXT NOT NULL DEFAULT '',
-    remark  TEXT NOT NULL DEFAULT ''
+    remark  TEXT NOT NULL DEFAULT '',
+    lastOpenTime INTEGER NOT NULL DEFAULT 0
   );
   CREATE TABLE IF NOT EXISTS shortcuts (
     name     TEXT PRIMARY KEY,
@@ -228,6 +229,9 @@ class TbsDbManager {
     if (!colNames.includes('remark')) {
       db.run("ALTER TABLE sites ADD COLUMN remark TEXT NOT NULL DEFAULT ''")
     }
+    if (!colNames.includes('lastOpenTime')) {
+      db.run('ALTER TABLE sites ADD COLUMN lastOpenTime INTEGER NOT NULL DEFAULT 0')
+    }
   }
 
   // ---------- plugin ----------
@@ -305,6 +309,18 @@ class TbsDbManager {
     getDb().run('UPDATE sites SET fingerprint = ? WHERE name = ?',
       [overrides ? JSON.stringify(overrides) : '', name])
     persistSync()
+  }
+
+  // 记录窗口最近一次打开时间（浏览器窗口列表展示用）
+  setLastOpenTime(name) {
+    try {
+      let row = queryOne(getDb(), 'SELECT name FROM sites WHERE name = ?', [name])
+      if (!row) row = queryOne(getDb(), 'SELECT name FROM sites WHERE name = ?', [String(name).toLowerCase()])
+      if (!row) return
+      getDb().run('UPDATE sites SET lastOpenTime = ? WHERE name = ?',
+        [Date.now(), row.name])
+      persistSync()
+    } catch { /* 打开记录失败不影响窗口打开 */ }
   }
 
   getSiteExtensions(name) {

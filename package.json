@@ -1,6 +1,6 @@
 {
   "name": "webappbox",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "main": "out/main.js",
   "type": "module",
   "scripts": {

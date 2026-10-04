@@ -17,60 +17,44 @@ onMounted(() => {
 });
 onUnmounted(() => mediaQuery.removeEventListener('change', handleChange));
 
-// Naive UI 主题覆盖 — NexBrowser 风格紫色系
+// Naive UI 主题覆盖 — BitBrowser 风格蓝色系（主色 #2f54eb）
 const themeOverrides = {
   common: {
-    primaryColor: '#7c3aed',
-    primaryColorHover: '#6d28d9',
-    primaryColorPressed: '#5b21b6',
-    primaryColorSuppl: '#7e57ff',
-    borderRadius: '8px',
-    borderRadiusSmall: '6px',
+    primaryColor: '#2f54eb',
+    primaryColorHover: '#1d39c4',
+    primaryColorPressed: '#0958d9',
+    primaryColorSuppl: '#4096ff',
+    borderRadius: '6px',
+    borderRadiusSmall: '4px',
   },
   Button: {
-    borderRadiusMedium: '8px',
-    borderRadiusSmall: '6px',
+    borderRadiusMedium: '6px',
+    borderRadiusSmall: '4px',
     fontWeight: '500',
   },
-  Card: { borderRadius: '14px' },
-  Tag: { borderRadius: '6px' },
-  Menu: { itemBorderRadius: '8px', itemHeight: '38px' },
-  Input: { borderRadius: '8px' },
-  Drawer: { borderRadius: '12px' },
-  Modal: { borderRadius: '14px' },
-  DataTable: { borderRadius: '12px', thPaddingMedium: '12px 10px', tdPaddingMedium: '10px' },
-  Pagination: { itemBorderRadius: '8px' },
+  Card: { borderRadius: '8px' },
+  Tag: { borderRadius: '4px' },
+  Input: { borderRadius: '6px' },
+  Drawer: { borderRadius: '8px' },
+  Modal: { borderRadius: '8px' },
+  DataTable: { borderRadius: '6px', thPaddingMedium: '10px 8px', tdPaddingMedium: '8px' },
+  Pagination: { itemBorderRadius: '4px' },
 }
 
 const route = useRoute();
 
-// 侧栏导航 — 与 NexBrowser 同构的分组布局
-const navGroups = [
-  {
-    title: '环境管理',
-    items: [
-      { key: 'window', label: '窗口管理', to: '/', icon: 'grid' },
-      { key: 'fingerprint', label: '指纹环境', to: '/fingerprint', icon: 'finger' },
-      { key: 'group', label: '站点分组', to: '/group', icon: 'folder' },
-    ]
-  },
-  {
-    title: '资源管理',
-    items: [
-      { key: 'proxy', label: '代理中心', to: '/proxy', icon: 'globe' },
-      { key: 'plugin', label: '拓展市场', to: '/plugin', icon: 'puzzle' },
-    ]
-  },
-  {
-    title: '系统中心',
-    items: [
-      { key: 'set', label: '用户配置', to: '/set', icon: 'gear' },
-      { key: 'kernel', label: '版本更新', to: '/kernel', icon: 'refresh' },
-      { key: 'shortcut', label: '改快捷键', to: '/shortcut', icon: 'keyboard' },
-      { key: 'clipboard', label: '剪贴板', to: '/clipboard', icon: 'clip' },
-      { key: 'feedback', label: '使用反馈', to: '/feedback', icon: 'message' },
-    ]
-  },
+// 侧栏导航 — BitBrowser 同款扁平一级菜单
+const navItems = [
+  { key: 'window', label: '浏览器窗口', to: '/', icon: 'grid' },
+  { key: 'group', label: '分组管理', to: '/group', icon: 'folder' },
+  { key: 'proxy', label: '代理IP', to: '/proxy', icon: 'globe' },
+  { key: 'plugin', label: '扩展中心', to: '/plugin', icon: 'puzzle' },
+  { key: 'fingerprint', label: '指纹环境', to: '/fingerprint', icon: 'finger' },
+  { key: 'set', label: '系统设置', to: '/set', icon: 'gear' },
+  { key: 'kernel', label: '版本更新', to: '/kernel', icon: 'refresh' },
+  { key: 'shortcut', label: '改快捷键', to: '/shortcut', icon: 'keyboard' },
+  { key: 'clipboard', label: '剪贴板', to: '/clipboard', icon: 'clip' },
+  { key: 'feedback', label: '使用反馈', to: '/feedback', icon: 'message' },
 ];
 
 const icons = {
@@ -102,25 +86,26 @@ onMounted(async () => {
   <n-message-provider>
     <n-dialog-provider>
       <n-config-provider :theme="theme" :theme-overrides="themeOverrides">
-      <div class="app-shell">
-        <header class="topbar">
-          <div class="brand">
-            <img :src="logoUrl" alt="WebAppBox" />
-            <span class="brand-name">WebAppBox</span>
-          </div>
-          <div class="top-right">
-            <span class="net-chip" :class="netMode === '直接连接' ? 'direct' : 'proxied'">
-              <i class="dot"></i>网络模式 · {{ netMode }}
-            </span>
-            <span class="ver" v-if="version">v{{ version }}</span>
-            <div class="avatar" title="本地模式">本</div>
-          </div>
-        </header>
+        <div class="app-shell">
+          <!-- 顶栏 -->
+          <header class="topbar">
+            <div class="brand">
+              <img :src="logoUrl" alt="WebAppBox" />
+              <span class="brand-name">WebAppBox</span>
+              <span class="brand-sub">多开网页盒子</span>
+            </div>
+            <div class="top-right">
+              <span class="net-chip" :class="netMode === '直接连接' ? 'direct' : 'proxied'">
+                <i class="dot"></i>网络模式 · {{ netMode }}
+              </span>
+              <span class="ver" v-if="version">v{{ version }}</span>
+              <div class="avatar" title="本地模式">本</div>
+            </div>
+          </header>
 
-        <aside class="sidebar">
-          <div v-for="g in navGroups" :key="g.title" class="nav-group">
-            <div class="nav-group-title">{{ g.title }}</div>
-            <router-link v-for="item in g.items" :key="item.key" :to="item.to" class="nav-item"
+          <!-- 左侧扁平菜单 -->
+          <aside class="sidebar">
+            <router-link v-for="item in navItems" :key="item.key" :to="item.to" class="nav-item"
               :class="{ active: route.path === item.to }">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
                 stroke-linecap="round" stroke-linejoin="round">
@@ -128,13 +113,17 @@ onMounted(async () => {
               </svg>
               <span>{{ item.label }}</span>
             </router-link>
-          </div>
-        </aside>
 
-        <main class="content">
-          <RouterView />
-        </main>
-      </div>
+            <div class="sidebar-foot">
+              <span>本地模式 · 无需登录</span>
+            </div>
+          </aside>
+
+          <!-- 内容区 -->
+          <main class="content">
+            <RouterView />
+          </main>
+        </div>
       </n-config-provider>
     </n-dialog-provider>
   </n-message-provider>
@@ -144,10 +133,10 @@ onMounted(async () => {
 .app-shell {
   height: 100vh;
   display: grid;
-  grid-template-columns: clamp(198px, 11vw, 216px) 1fr;
-  grid-template-rows: 48px 1fr;
-  background: var(--wbx-page, #f4f6f9);
-  color: #151a23;
+  grid-template-columns: 200px 1fr;
+  grid-template-rows: 52px 1fr;
+  background: #f0f2f5;
+  color: #1f2329;
 }
 
 /* ---------- 顶栏 ---------- */
@@ -156,9 +145,9 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 14px;
-  background: rgba(255, 255, 255, .92);
-  border-bottom: 1px solid rgba(25, 33, 46, .08);
+  padding: 0 16px;
+  background: #fff;
+  border-bottom: 1px solid #e5e6eb;
 }
 
 .brand {
@@ -167,12 +156,21 @@ onMounted(async () => {
   gap: 9px;
   font-weight: 700;
   font-size: 15px;
+  color: #1d2129;
 }
 
 .brand img {
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+}
+
+.brand-sub {
+  font-size: 12px;
+  font-weight: 400;
+  color: #86909c;
+  border-left: 1px solid #e5e6eb;
+  padding-left: 9px;
 }
 
 .top-right {
@@ -199,33 +197,33 @@ onMounted(async () => {
 }
 
 .net-chip.direct {
-  color: #047857;
-  background: rgba(16, 185, 129, .12);
+  color: #00b42a;
+  background: rgba(0, 180, 42, .1);
 }
 
 .net-chip.direct .dot {
-  background: #10b981;
+  background: #00b42a;
 }
 
 .net-chip.proxied {
-  color: #6d28d9;
-  background: rgba(124, 58, 237, .12);
+  color: #2f54eb;
+  background: rgba(47, 84, 235, .08);
 }
 
 .net-chip.proxied .dot {
-  background: #7c3aed;
+  background: #2f54eb;
 }
 
 .ver {
   font-size: 12px;
-  color: #858f9f;
+  color: #86909c;
 }
 
 .avatar {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #7e57ff, #7c3aed);
+  background: #2f54eb;
   color: #fff;
   font-size: 13px;
   font-weight: 700;
@@ -234,75 +232,66 @@ onMounted(async () => {
   justify-content: center;
 }
 
-/* ---------- 侧栏 ---------- */
+/* ---------- 侧栏（BitBrowser 扁平菜单） ---------- */
 .sidebar {
   grid-column: 1;
   grid-row: 2;
-  margin: 10px 0 10px 10px;
-  padding: 10px 9px;
-  background: rgba(255, 255, 255, .9);
-  border: 1px solid rgba(25, 33, 46, .07);
-  border-radius: 14px;
+  background: #fff;
+  border-right: 1px solid #e5e6eb;
+  padding: 12px 10px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-}
-
-.nav-group {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  margin-bottom: 8px;
-}
-
-.nav-group-title {
-  font-size: 12px;
-  color: #858f9f;
-  padding: 6px 10px 5px;
-  font-weight: 600;
+  gap: 2px;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 9px;
-  height: 36px;
-  padding: 0 10px;
-  border-radius: 9px;
-  color: #566071;
+  gap: 10px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 6px;
+  color: #4e5969;
   text-decoration: none;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 500;
   transition: background .15s, color .15s;
 }
 
 .nav-item svg {
-  width: 17px;
-  height: 17px;
+  width: 18px;
+  height: 18px;
   flex: none;
 }
 
 .nav-item:hover {
-  background: rgba(124, 58, 237, .08);
-  color: #4c1d95;
+  background: #f2f3f5;
+  color: #1d2129;
 }
 
 .nav-item.active {
-  background: rgba(124, 58, 237, .12);
-  color: #6d28d9;
+  background: rgba(47, 84, 235, .08);
+  color: #2f54eb;
   font-weight: 600;
 }
 
-/* ---------- 内容 ---------- */
+.sidebar-foot {
+  margin-top: auto;
+  padding: 10px 12px 4px;
+  font-size: 12px;
+  color: #c9cdd4;
+}
+
+/* ---------- 内容区 ---------- */
 .content {
   grid-column: 2;
   grid-row: 2;
-  margin: 10px 10px 10px 0;
-  padding: 18px 20px;
-  background: rgba(255, 255, 255, .9);
-  border: 1px solid rgba(25, 33, 46, .07);
-  border-radius: 14px;
+  margin: 12px;
+  padding: 16px 18px;
+  background: #fff;
+  border: 1px solid #e5e6eb;
+  border-radius: 8px;
   overflow-y: auto;
 }
 </style>
