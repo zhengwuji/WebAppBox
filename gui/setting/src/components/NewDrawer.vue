@@ -9,7 +9,7 @@ const props = defineProps({
 })
 
 const uploader = ref(null)
-const formData = reactive({tag: '', url: '', proxy: '', type: 'site', extensions: []})
+const formData = reactive({tag: '', url: '', proxy: '', type: 'site', extensions: [], remark: ''})
 watch(() => props.element, (newVal) => {
   Object.assign(formData, newVal || {})
   formData.type = newVal?.type || 'site'
@@ -195,6 +195,11 @@ const handleSave = () => {
           ❌ {{ testResult.error }}
         </n-alert>
       </template>
+
+      <div class="flex-row" style="margin-top: 20px">
+        <n-input v-model:value="formData.remark" type="textarea" :rows="2"
+                 placeholder="备注（可选，窗口管理列表中可直接编辑）" />
+      </div>
 
       <br>
       <n-alert :show-icon="false">

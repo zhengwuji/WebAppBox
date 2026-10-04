@@ -71,6 +71,7 @@ contextBridge.exposeInMainWorld('myApi', {
     getFingerprintOptions: () => ipcRenderer.invoke('fingerprint:options'),
     getBrowserStartUrl: () => ipcRenderer.invoke('get:browser:starturl'),
     getBrowserIcon: () => ipcRenderer.invoke('get:browser:icon'),
+    getRunningWindows: () => ipcRenderer.invoke('window:running'),
 
     // 代理
     testProxy: (config) => ipcRenderer.invoke('proxy:test', config),

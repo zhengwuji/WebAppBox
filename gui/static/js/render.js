@@ -31,7 +31,7 @@ function updateMenu(menu, pid) {
         const navItem = `           
             <div class="nav-item" data-url="${item.url}" data-name="${item.name}" data-tag="${item.tag}">
                 <div class="logo">
-                    <span><img src="${item.img}" alt="${item.tag}"></span>
+                    <span><img src="${item.img || './webappbox-icon-64.png'}" alt="${item.tag}" onerror="this.onerror=null;this.src='./webappbox-icon-64.png'"></span>
                 </div>
             </div>
         `;

@@ -6,8 +6,23 @@ const router = createRouter({
   routes: [
     {
       path: '/',
+      name: 'window',
+      component: () => import('@/views/WindowManageView.vue')
+    },
+    {
+      path: '/list',
       name: 'list',
-      component: () => import('@/views/ListView.vue')
+      component: () => import('@/views/WindowManageView.vue')
+    },
+    {
+      path: '/proxy',
+      name: 'proxy',
+      component: () => import('@/views/ProxyCenterView.vue')
+    },
+    {
+      path: '/kernel',
+      name: 'kernel',
+      component: () => import('@/views/VersionUpdateView.vue')
     },
     {
       path: '/shortcut',

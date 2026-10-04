@@ -39,7 +39,8 @@ const SCHEMA_SQL = `
     proxy   TEXT NOT NULL DEFAULT '',
     fingerprint TEXT NOT NULL DEFAULT '',
     type    TEXT NOT NULL DEFAULT 'site',
-    extensions TEXT NOT NULL DEFAULT ''
+    extensions TEXT NOT NULL DEFAULT '',
+    remark  TEXT NOT NULL DEFAULT ''
   );
   CREATE TABLE IF NOT EXISTS shortcuts (
     name     TEXT PRIMARY KEY,
@@ -224,6 +225,9 @@ class TbsDbManager {
     if (!colNames.includes('extensions')) {
       db.run("ALTER TABLE sites ADD COLUMN extensions TEXT NOT NULL DEFAULT ''")
     }
+    if (!colNames.includes('remark')) {
+      db.run("ALTER TABLE sites ADD COLUMN remark TEXT NOT NULL DEFAULT ''")
+    }
   }
 
   // ---------- plugin ----------
@@ -318,12 +322,13 @@ class TbsDbManager {
     const order = (cnt?.c || 0) + 1
     const name = md5Hash(site.name + String(Date.now()))
     exec(db,
-      `INSERT INTO sites (name, tag, url, img, isOpen, "order", jsCode, proxy, type, extensions)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO sites (name, tag, url, img, isOpen, "order", jsCode, proxy, type, extensions, remark)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [name, site.tag || '', site.url || '', site.img || '',
        site.isOpen ? 1 : 0, order, site.jsCode || '', site.proxy || '',
        site.type || 'site',
-       Array.isArray(site.extensions) ? JSON.stringify(site.extensions) : (site.extensions || '')]
+       Array.isArray(site.extensions) ? JSON.stringify(site.extensions) : (site.extensions || ''),
+       site.remark || '']
     )
     persistSync()
     return { ...site, name, order }
@@ -335,13 +340,14 @@ class TbsDbManager {
     if (!existing) return
     const merged = { ...existing, ...site }
     exec(db,
-      `UPDATE sites SET tag = ?, url = ?, img = ?, isOpen = ?, "order" = ?, jsCode = ?, proxy = ?, type = ?, extensions = ?
+      `UPDATE sites SET tag = ?, url = ?, img = ?, isOpen = ?, "order" = ?, jsCode = ?, proxy = ?, type = ?, extensions = ?, remark = ?
        WHERE name = ?`,
       [merged.tag || '', merged.url || '', merged.img || '',
        merged.isOpen ? 1 : 0, merged.order || 0,
        merged.jsCode || '', merged.proxy || '',
        merged.type || 'site',
        Array.isArray(merged.extensions) ? JSON.stringify(merged.extensions) : (merged.extensions || ''),
+       merged.remark || '',
        site.name]
     )
     persistSync()

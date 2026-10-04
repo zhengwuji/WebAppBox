@@ -26,7 +26,7 @@ function updateMenu(menus, pid) {
     menus.forEach(item => {
         let navItem = `
                 <div data-url="${item.url}" data-name="${item.name}" class="icon-item">
-                    <div class="icon"><img src="${item.img}" alt="${item.tag}"></div>
+                    <div class="icon"><img src="${item.img || './webappbox-icon-64.png'}" alt="${item.tag}" onerror="this.onerror=null;this.src='./webappbox-icon-64.png'"></div>
                     <span class="icon-label">${item.tag}</span>
                 </div>
 			`;

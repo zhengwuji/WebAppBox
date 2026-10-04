@@ -1,4 +1,5 @@
 import {app, BaseWindow, View, ipcMain, clipboard, WebContentsView, nativeTheme, dialog, session, nativeImage} from 'electron'
+import fs from 'fs'
 import path from 'path'
 import viewManager from './viewManager.js'
 import tbsDbManager from './store/tbsDbManager.js'
@@ -27,6 +28,26 @@ class WindowManager{
         this.window = null
         this.menuView = null
         this.webView = null
+    }
+
+    // 内置浏览器环境图标（优先小图，减小 dataURL 体积）
+    getBuiltInIconDataUrl(size = 64) {
+        const candidates = [
+            'resource/build/webappbox-icon-64.png',
+            'resource/build/webappbox-icon.png',
+            'resource/build/win_icon.ico'
+        ]
+        for (const rel of candidates) {
+            try {
+                const p = path.join(CONS.APP.PATH, rel)
+                if (!fs.existsSync(p)) continue
+                const img = nativeImage.createFromPath(p)
+                if (!img.isEmpty()) {
+                    return size ? img.resize({width: size, height: size}).toDataURL() : img.toDataURL()
+                }
+            } catch { /* 尝试下一个候选 */ }
+        }
+        return ''
     }
 
     getMenuView(){
@@ -318,6 +339,16 @@ class WindowManager{
         ipcMain.handle('get:favicon', async (event, name) => {
             try {
                 const site = tbsDbManager.getSite(name);
+                if (!site) return {ret:1, data:'获取失败:站点不存在'};
+                // 浏览器环境与本地页面不走网络抓取，直接用内置图标并落库
+                if (site.type === 'browser' || !site.url || /^file:/i.test(site.url)) {
+                    const data = this.getBuiltInIconDataUrl();
+                    if (data) {
+                        tbsDbManager.updateSite(Object.assign({}, site, {img: data}));
+                        this.refreshMenuView();
+                    }
+                    return {ret:0, data: data || ''};
+                }
                 const faviconUrl = await fetchIcon.getFaviconUrl(site.url);
                 const iconData = await fetchIcon.fetchFaviconAsBase64(faviconUrl);
                 tbsDbManager.updateSite(Object.assign(site, {img: iconData}))
@@ -377,13 +408,12 @@ class WindowManager{
 
         ipcMain.handle('get:browser:starturl', async () => CONS.APP.BROWSER_START_URL)
 
+        // 窗口管理台：当前已打开（运行中）的窗口名列表
+        ipcMain.handle('window:running', async () => viewManager.views.map(v => v.name))
+
         ipcMain.handle('get:browser:icon', async () => {
-            try {
-                const img = nativeImage.createFromPath(path.join(CONS.APP.PATH, 'resource/build/webappbox-icon.png'))
-                return { ret: 0, data: img.isEmpty() ? '' : img.toDataURL() }
-            } catch {
-                return { ret: 1 }
-            }
+            const data = this.getBuiltInIconDataUrl()
+            return { ret: data ? 0 : 1, data }
         })
 
         ipcMain.handle('browser:list-extensions', async (event, name) => {
